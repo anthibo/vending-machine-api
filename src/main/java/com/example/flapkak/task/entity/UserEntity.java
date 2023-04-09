@@ -4,7 +4,6 @@ package com.example.flapkak.task.entity;
 import com.example.flapkak.task.enums.UserRoles;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.DialectOverride;
 
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.NotBlank;

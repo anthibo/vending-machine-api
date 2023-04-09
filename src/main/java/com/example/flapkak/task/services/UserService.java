@@ -1,24 +1,25 @@
 package com.example.flapkak.task.services;
 
+import com.example.flapkak.task.dtos.AddDepositDto;
 import com.example.flapkak.task.dtos.CreateUserDto;
+import com.example.flapkak.task.dtos.UpdateUserDto;
 import com.example.flapkak.task.entity.UserEntity;
 import com.example.flapkak.task.mappers.UserEntityMapper;
 import com.example.flapkak.task.repositories.UserRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.math.BigDecimal;
 import java.util.Optional;
 
 @Service
 @Slf4j
 public class UserService {
     private final UserRepository userRepository;
-    private BCryptPasswordEncoder passwordEncoder;
-    private UserEntityMapper userEntityMapper;
+    private final BCryptPasswordEncoder passwordEncoder;
+    private final UserEntityMapper userEntityMapper;
 
     @Autowired
     public UserService(UserRepository userRepository,
@@ -46,15 +47,77 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 
-    // public List<UserEntity> getAllUsersByRole(String role) {
-    //// return userRepository.findAllByRole(role);
-    // }
+    public UserEntity deposit(Long userId, AddDepositDto addDepositDto) {
 
-//    public UserEntity updateUser(user) {
-//        return userRepository.save(user);
-//    }
+        try {
+            UserEntity existingUser = userRepository.findById(userId).orElse(null);
+            if (existingUser == null) {
+                log.error("User with id: {} not found", userId);
+                // throw exception user not found
+
+                return null;
+            }
+
+            existingUser.setDeposit(existingUser.getDeposit().add(new BigDecimal(addDepositDto.getCoin())));
+            UserEntity updatedUser = userRepository.save(existingUser);
+
+            return updatedUser;
+        } catch (Exception e) {
+            log.error("Error depositing {} to user with id: {}", addDepositDto.getCoin(), userId);
+            return null;
+        }
+    }
+
+    public UserEntity updateUser(Long userId, UpdateUserDto updateUserDto) {
+        try {
+            UserEntity existingUser = userRepository.findById(userId).orElse(null);
+
+            if (existingUser == null) {
+                log.error("User with id: {} not found", userId);
+                // throw exception user not found
+
+                return null;
+            }
+
+            if (updateUserDto.getPassword() != null) {
+                String hashedPassword = passwordEncoder.encode(updateUserDto.getPassword());
+                updateUserDto.setPassword(hashedPassword);
+            }
+
+            UserEntity mappedUpdateUserEntity = userEntityMapper.userEntity(userId, updateUserDto);
+            UserEntity updatedUser = userRepository.save(mappedUpdateUserEntity);
+
+            return userRepository.save(updatedUser);
+        } catch (Exception e) {
+            log.error("Error updating user with id: {}", userId);
+            return null;
+        }
+    }
 
     public void deleteUser(Long id) {
-        userRepository.deleteById(id);
+        try {
+            userRepository.deleteById(id);
+        } catch (Exception e) {
+            log.error("Error deleting user with id: {}", id);
+        }
+    }
+
+    public UserEntity reset(Long userId) {
+        try {
+            UserEntity existingUser = userRepository.findById(userId).orElse(null);
+            if (existingUser == null) {
+                log.error("User with id: {} not found", userId);
+                // throw exception user not found
+                return null;
+            }
+
+            existingUser.setDeposit(new BigDecimal(0));
+            UserEntity updatedUser = userRepository.save(existingUser);
+            return updatedUser;
+        } catch (Exception e) {
+            log.error("Error resetting user with id: {}", userId);
+            // throw exception user not found
+            return null;
+        }
     }
 }
