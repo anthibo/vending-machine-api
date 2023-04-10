@@ -1,7 +1,6 @@
 package com.example.flapkak.task.common.mappers;
 
 import com.example.flapkak.task.dtos.CreateProductDto;
-import com.example.flapkak.task.dtos.CreateUserDto;
 import com.example.flapkak.task.dtos.UpdateProductDto;
 import com.example.flapkak.task.entity.ProductEntity;
 import com.example.flapkak.task.entity.UserEntity;

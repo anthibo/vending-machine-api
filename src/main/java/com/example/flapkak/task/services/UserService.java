@@ -41,77 +41,64 @@ public class UserService {
                 createUserDto.getUsername());
         // String hashedPassword = passwordEncoder.encode(createUserDto.getPassword());
         // createUserDto.setPassword(hashedPassword);
-        UserEntity existingUser = userRepository.findByUsername(createUserDto.getUsername()).get();
+        UserEntity existingUser = userRepository.findByUsername(createUserDto.getUsername());
         if (existingUser != null) {
             log.error("User with username: {} already exists", createUserDto.getUsername());
-            // throw exception user already exists
             throw new BadRequestException("user already exists");
         }
-        UserEntity userEntity = userEntityMapper.userEntity(createUserDto);
-        return userRepository.save(userEntity);
+        log.info("createUserDto: {}", createUserDto.toString());
 
+        UserEntity user = userEntityMapper.userEntity(createUserDto);
+        log.info("user: {}", user.toString());
+
+        return userRepository.save(user);
     }
 
     public UserEntity getUser(Long id) {
         UserEntity user = userRepository.findById(id).orElse(null);
-        log.info("user: {}", user.toString());
         return user;
     }
 
-    public Optional<UserEntity> getUserByUsername(String username) {
+    public UserEntity getUserByUsername(String username) {
         return userRepository.findByUsername(username);
     }
 
     public UserEntity deposit(Long userId, AddDepositDto addDepositDto) throws NotFoundException {
         log.info("Depositing with user: {}", userId);
-        try {
-            UserEntity existingUser = userRepository.findById(userId).orElse(null);
-            if (existingUser == null) {
-                log.error("User with id: {} not found", userId);
-                throw new NotFoundException("User not found");
-            }
-
-            double newDeposit = existingUser.getDeposit() + addDepositDto.getCoin();
-            existingUser.setDeposit(newDeposit);
-            UserEntity updatedUser = userRepository.save(existingUser);
-            log.info("Deposit success with user: {}. Current deposit should be: {}, actual: {}",
-                    userId,
-                    newDeposit,
-                    updatedUser.getDeposit());
-
-            return updatedUser;
-        } catch (Exception e) {
-            log.error("Error depositing user: {}, stackTrace: {}",
-                    e.getMessage(),
-                    e.getStackTrace());
-            throw new InternalServerException();
+        UserEntity existingUser = userRepository.findById(userId).orElse(null);
+        if (existingUser == null) {
+            log.error("User with id: {} not found", userId);
+            throw new NotFoundException("User not found");
         }
+
+        double newDeposit = existingUser.getDeposit() + addDepositDto.getCoin();
+        existingUser.setDeposit(newDeposit);
+        UserEntity updatedUser = userRepository.save(existingUser);
+        log.info("Deposit success with user: {}. Current deposit should be: {}, actual: {}",
+                userId,
+                newDeposit,
+                updatedUser.getDeposit());
+
+        return updatedUser;
     }
 
-    public UserEntity updateUser(Long userId, UpdateUserDto updateUserDto) {
-        try {
-            UserEntity existingUser = userRepository.findById(userId).orElse(null);
+    public UserEntity updateUser(Long userId, UpdateUserDto updateUserDto) throws NotFoundException {
+        UserEntity existingUser = userRepository.findById(userId).orElse(null);
 
-            if (existingUser == null) {
-                log.error("User with id: {} not found", userId);
-                throw new NotFoundException("User not found");
-            }
-
-            // if (updateUserDto.getPassword() != null) {
-            // String hashedPassword = passwordEncoder.encode(updateUserDto.getPassword());
-            // updateUserDto.setPassword(hashedPassword);
-            // }
-
-            UserEntity mappedUpdateUserEntity = userEntityMapper.userEntity(existingUser, updateUserDto);
-            UserEntity updatedUser = userRepository.save(mappedUpdateUserEntity);
-
-            return userRepository.save(updatedUser);
-        } catch (Exception e) {
-            log.error("Error updating user: {}, stackTrace: {}",
-                    e.getMessage(),
-                    e.getStackTrace());
-            throw new InternalServerException();
+        if (existingUser == null) {
+            log.error("User with id: {} not found", userId);
+            throw new NotFoundException("User not found");
         }
+
+        // if (updateUserDto.getPassword() != null) {
+        // String hashedPassword = passwordEncoder.encode(updateUserDto.getPassword());
+        // updateUserDto.setPassword(hashedPassword);
+        // }
+
+        UserEntity mappedUpdateUserEntity = userEntityMapper.userEntity(existingUser, updateUserDto);
+        UserEntity updatedUser = userRepository.save(mappedUpdateUserEntity);
+
+        return userRepository.save(updatedUser);
     }
 
     public UserEntity updateUser(UserEntity updatedUserEntity) {
@@ -126,7 +113,7 @@ public class UserService {
         }
     }
 
-    public void deleteUser(Long id) throws BadRequestException, InternalServerException {
+    public void deleteUser(Long id) throws InternalServerException {
         try {
             userRepository.deleteById(id);
         } catch (Exception e) {
@@ -137,22 +124,14 @@ public class UserService {
         }
     }
 
-    public UserEntity reset(Long userId) {
-        try {
-            UserEntity existingUser = userRepository.findById(userId).orElse(null);
-            if (existingUser == null) {
-                log.error("User with id: {} not found", userId);
-                throw new NotFoundException("User not found");
-            }
-
-            existingUser.setDeposit(0);
-            UserEntity updatedUser = userRepository.save(existingUser);
-            return updatedUser;
-        } catch (Exception e) {
-            log.error("Error resetting user: {}, stackTrace: {}",
-                    e.getMessage(),
-                    e.getStackTrace());
-            throw new InternalServerException();
+    public UserEntity reset(Long userId) throws NotFoundException {
+        UserEntity existingUser = userRepository.findById(userId).orElse(null);
+        if (existingUser == null) {
+            log.error("User with id: {} not found", userId);
+            throw new NotFoundException("User not found");
         }
+        existingUser.setDeposit(0);
+        UserEntity updatedUser = userRepository.save(existingUser);
+        return updatedUser;
     }
 }

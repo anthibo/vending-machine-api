@@ -6,6 +6,7 @@ import com.example.flapkak.task.common.exceptions.NotFoundException;
 import com.example.flapkak.task.common.exceptions.UnauthorizedException;
 import com.example.flapkak.task.common.mappers.ProductEntityMapper;
 import com.example.flapkak.task.common.valueObjects.ProductsResponse;
+import com.example.flapkak.task.dtos.BuyProductDto;
 import com.example.flapkak.task.dtos.CreateProductDto;
 import com.example.flapkak.task.dtos.UpdateProductDto;
 import com.example.flapkak.task.entity.ProductEntity;
@@ -19,9 +20,11 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 @Service
 @Slf4j
+@Validated
 public class ProductService {
     private final UserService userService;
     private final ProductRepository productRepository;
@@ -38,39 +41,26 @@ public class ProductService {
     }
 
     public ProductEntity createProduct(CreateProductDto createProductDto, long sellerId) {
-        try {
-            log.info("Creating new product of sellerID: {}",
-                    sellerId);
-            UserEntity user = userService.getUser(sellerId);
-            if (user == null || user.getRole() != UserRoles.SELLER) {
-                log.error("Seller with id: {} not found", sellerId);
-                throw new UnauthorizedException("you are not authorized to create products");
-            }
-            ProductEntity productEntity = productEntityMapper.productEntity(createProductDto, user);
-            return productRepository.save(productEntity);
-        } catch (Exception e) {
-            log.error("Error creating product: {}, stackTrace: {}",
-                    e.getMessage(),
-                    e.getStackTrace());
-            throw new InternalServerException();
-
+        log.info("Creating new product for sellerID: {}",
+                sellerId);
+        UserEntity user = userService.getUser(sellerId);
+        if (user == null || user.getRole() != UserRoles.SELLER) {
+            log.error("Seller with id: {} not found", sellerId);
+            throw new UnauthorizedException("you are not authorized to create products");
         }
+        log.info("createProductDto data: {}", createProductDto.toString());
+        ProductEntity productEntity = productEntityMapper.productEntity(createProductDto, user);
+        log.info("product entity mapped: {}", productEntity);
+        return productRepository.save(productEntity);
     }
 
     public ProductEntity findProductById(long productId) {
-        try {
-            Optional<ProductEntity> productEntity = productRepository.findById(productId);
-            if (productEntity == null) {
-                log.error("product with id: {} not found", productId);
-                throw new NotFoundException("product not found");
-            }
-            return productEntity.get();
-        } catch (Exception e) {
-            log.error("Error findProductById: {}, stackTrace: {}",
-                    e.getMessage(),
-                    e.getStackTrace());
-            throw new InternalServerException();
+        Optional<ProductEntity> productEntity = productRepository.findById(productId);
+        if (!productEntity.isPresent()) {
+            log.error("product with id: {} not found", productId);
+            throw new NotFoundException("product not found");
         }
+        return productEntity.get();
     }
 
     public ProductsResponse findAllProducts() {
@@ -85,74 +75,55 @@ public class ProductService {
         }
     }
 
-    public ProductEntity updateProduct(UpdateProductDto updateProductDto, long sellerId, long productId) {
-        try {
-            log.info("update product of id: {}",
-                    productId);
-            ProductEntity existingProduct = findProductById(productId);
-            UserEntity seller = userService.getUser(sellerId);
-            if (seller == null || existingProduct.getSeller().getId() != sellerId) {
-                throw new UnauthorizedException("you are not authorized to update this product");
-            }
-            ProductEntity productEntity = productEntityMapper.productEntity(updateProductDto, seller);
-            return productRepository.save(productEntity);
-        } catch (Exception e) {
-            log.error("Error updateProduct: {}, stackTrace: {}",
-                    e.getMessage(),
-                    e.getStackTrace());
-            throw new InternalServerException();
+    public ProductEntity updateProduct(UpdateProductDto updateProductDto, long sellerId, long productId)
+            throws UnauthorizedException    , NotFoundException {
+        log.info("update product of id: {}",
+                productId);
+        ProductEntity existingProduct = findProductById(productId);
+        UserEntity seller = userService.getUser(sellerId);
+        if (seller == null || existingProduct.getSeller().getId() != sellerId) {
+            throw new UnauthorizedException("you are not authorized to update this product");
         }
+        ProductEntity productEntity = productEntityMapper.productEntity(updateProductDto, seller);
+        return productRepository.save(productEntity);
     }
 
     public void deleteProduct(long sellerId, long productId) {
-        try {
-            log.info("delete product of id: {}",
-                    productId);
-            ProductEntity existingProduct = findProductById(productId);
-            UserEntity seller = userService.getUser(sellerId);
-            if (seller == null || existingProduct.getSeller().getId() != sellerId) {
-                throw new UnauthorizedException("you are not authorized to delete this product");
-            }
-            productRepository.delete(existingProduct);
-        } catch (Exception e) {
-            log.error("Error deleteProduct: {}, stackTrace: {}",
-                    e.getMessage(),
-                    e.getStackTrace());
-            throw new InternalServerException();
+        log.info("delete product of id: {}",
+                productId);
+        ProductEntity existingProduct = findProductById(productId);
+        UserEntity seller = userService.getUser(sellerId);
+        if (seller == null || existingProduct.getSeller().getId() != sellerId) {
+            throw new UnauthorizedException("you are not authorized to delete this product");
         }
+        productRepository.deleteById(productId);
     }
 
-    public ProductEntity buyProduct(long buyerId, long productId) {
-        try {
-            log.info("buy product of id: {}",
-                    productId);
-            ProductEntity existingProduct = findProductById(productId);
-            UserEntity user = userService.getUser(buyerId);
-            if (user == null || user.getRole() != UserRoles.BUYER) {
-                throw new UnauthorizedException("you are not authorized to buy");
-            }
-            if (existingProduct == null) {
-                log.error("product with id: {} not found", productId);
-                throw new NotFoundException("product not found");
-            }
-            if (existingProduct.getQuantity() == 0) {
-                log.error("Product with id: {} is not available", productId);
-                throw new NotFoundException("product not available now");
-            }
-            // check if buyer has enough money
-            if (user.getDeposit() < existingProduct.getCost()) {
-                log.error("Buyer with id: {} does not have enough money", buyerId);
-                throw new NotFoundException("You do not have enough coins!");
-            }
-            existingProduct.setQuantity(existingProduct.getQuantity() - 1);
-            user.setDeposit(user.getDeposit() - existingProduct.getCost());
-            userService.updateUser(user);
-            return productRepository.save(existingProduct);
-        } catch (Exception e) {
-            log.error("Error buyProduct: {}, stackTrace: {}",
-                    e.getMessage(),
-                    e.getStackTrace());
-            throw new InternalServerException();
+    public UserEntity buyProduct(long buyerId, long productId, BuyProductDto buyProductDto) {
+        log.info("buy product of id: {}",
+                productId);
+        ProductEntity existingProduct = findProductById(productId);
+        UserEntity user = userService.getUser(buyerId);
+        if (user == null || user.getRole() != UserRoles.BUYER) {
+            throw new UnauthorizedException("you are not authorized to buy");
         }
+        if (existingProduct == null) {
+            log.error("product with id: {} not found", productId);
+            throw new NotFoundException("product not found");
+        }
+        if (buyProductDto.getAmount() > existingProduct.getQuantity()) {
+            log.error("Product with id: {} is not available", productId);
+            throw new NotFoundException("product not available now");
+        }
+        // check if buyer has enough money
+        if (user.getDeposit() < existingProduct.getCost()) {
+            log.error("Buyer with id: {} does not have enough money", buyerId);
+            throw new NotFoundException("You do not have enough coins!");
+        }
+        existingProduct.setQuantity(existingProduct.getQuantity() - buyProductDto.getAmount());
+        user.setDeposit(user.getDeposit() - (existingProduct.getCost() * buyProductDto.getAmount()));
+        UserEntity updatedUser = userService.updateUser(user);
+        productRepository.save(existingProduct);
+        return updatedUser;
     }
 }

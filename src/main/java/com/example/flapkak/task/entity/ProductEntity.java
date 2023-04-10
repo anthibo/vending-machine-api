@@ -1,8 +1,9 @@
 package com.example.flapkak.task.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
-
 
 @Getter
 @Setter
@@ -25,6 +26,7 @@ public class ProductEntity {
     @Column(nullable = false)
     private Integer quantity;
 
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "seller_id")
     private UserEntity seller;
