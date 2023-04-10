@@ -21,10 +21,7 @@ public class ProductEntity {
     private String name;
 
     @Column(nullable = false)
-    private String description;
-
-    @Column(nullable = false)
-    private BigDecimal cost;
+    private double cost;
 
     @Column(nullable = false)
     private Integer quantity;

@@ -36,5 +36,5 @@ public class UserEntity {
 
     @DecimalMin(value = "0.00")
     @Column(nullable = false, columnDefinition="NUMERIC(10, 2) DEFAULT '0.00'")
-    private BigDecimal deposit;
+    private double deposit;
 }

@@ -22,7 +22,8 @@ public class UserService {
     private final UserEntityMapper userEntityMapper;
 
     @Autowired
-    public UserService(UserRepository userRepository,
+    public UserService(
+            UserRepository userRepository,
             BCryptPasswordEncoder passwordEncoder,
             UserEntityMapper userEntityMapper) {
         this.userRepository = userRepository;
@@ -58,7 +59,7 @@ public class UserService {
                 return null;
             }
 
-            existingUser.setDeposit(existingUser.getDeposit().add(new BigDecimal(addDepositDto.getCoin())));
+            existingUser.setDeposit(existingUser.getDeposit() + addDepositDto.getCoin());
             UserEntity updatedUser = userRepository.save(existingUser);
 
             return updatedUser;
@@ -94,6 +95,17 @@ public class UserService {
         }
     }
 
+    public UserEntity updateUser(UserEntity updatedUserEntity) {
+        try {
+            UserEntity updatedUser = userRepository.save(updatedUserEntity);
+            return updatedUser;
+
+        } catch (Exception e) {
+            log.error("Error updating user with id: {}", updatedUserEntity.getId());
+            return null;
+        }
+    }
+
     public void deleteUser(Long id) {
         try {
             userRepository.deleteById(id);
@@ -111,7 +123,7 @@ public class UserService {
                 return null;
             }
 
-            existingUser.setDeposit(new BigDecimal(0));
+            existingUser.setDeposit(0);
             UserEntity updatedUser = userRepository.save(existingUser);
             return updatedUser;
         } catch (Exception e) {
