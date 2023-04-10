@@ -1,0 +1,30 @@
+services:
+  # PostgreSQL database container
+  db:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: flapkap-task
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+  # Spring Boot application container
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/flapkap-task
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_FLYWAY_URL: jdbc:postgresql://localhost:5432/flapkap-task
+      SPRING_FLYWAY_USER: postgres
+      SPRING_FLYWAY_PASSWORD: password
+    depends_on:
+      - db
+    ports:
+      - 3000:3000
+    command: ["java", "-jar", "/app.jar", "--spring.flyway.baselineOnMigrate=true"]
