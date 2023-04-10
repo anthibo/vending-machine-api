@@ -1,12 +1,13 @@
 package com.example.flapkak.task.entity;
 
 
-import com.example.flapkak.task.enums.UserRoles;
 import jakarta.persistence.*;
 import lombok.*;
 
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.NotBlank;
+
+import com.example.flapkak.task.common.enums.UserRoles;
 
 @Getter
 @Setter
@@ -24,9 +25,9 @@ public class UserEntity {
     @Column(unique = true, nullable = false)
     private String username;
 
-    @NotBlank
-    @Column(nullable = false)
-    private String password;
+    // @NotBlank
+    // @Column(nullable = false)
+    // private String password;
 
     @NotBlank
     @Enumerated(EnumType.STRING)

@@ -1,12 +1,16 @@
 package com.example.flapkak.task.services;
 
+import com.example.flapkak.task.common.enums.UserRoles;
+import com.example.flapkak.task.common.exceptions.InternalServerException;
+import com.example.flapkak.task.common.exceptions.NotFoundException;
+import com.example.flapkak.task.common.exceptions.UnauthorizedException;
+import com.example.flapkak.task.common.mappers.ProductEntityMapper;
+import com.example.flapkak.task.common.valueObjects.ProductsResponse;
 import com.example.flapkak.task.dtos.CreateProductDto;
 import com.example.flapkak.task.dtos.UpdateProductDto;
 import com.example.flapkak.task.entity.ProductEntity;
 import com.example.flapkak.task.entity.UserEntity;
-import com.example.flapkak.task.mappers.ProductEntityMapper;
 import com.example.flapkak.task.repositories.ProductRepository;
-import com.example.flapkak.task.valueObjects.ProductsResponse;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,19 +41,19 @@ public class ProductService {
         try {
             log.info("Creating new product of sellerID: {}",
                     sellerId);
-            UserEntity seller = userService.getUser(sellerId);
-            if (seller == null) {
+            UserEntity user = userService.getUser(sellerId);
+            if (user == null || user.getRole() != UserRoles.SELLER) {
                 log.error("Seller with id: {} not found", sellerId);
-                // throw exception user not found
-
-                return null;
+                throw new UnauthorizedException("you are not authorized to create products");
             }
-            ProductEntity productEntity = productEntityMapper.productEntity(createProductDto, seller);
+            ProductEntity productEntity = productEntityMapper.productEntity(createProductDto, user);
             return productRepository.save(productEntity);
         } catch (Exception e) {
-            log.error("Error while creating new product, error: {}", e.getMessage());
+            log.error("Error creating product: {}, stackTrace: {}",
+                    e.getMessage(),
+                    e.getStackTrace());
+            throw new InternalServerException();
 
-            return null;
         }
     }
 
@@ -57,29 +61,27 @@ public class ProductService {
         try {
             Optional<ProductEntity> productEntity = productRepository.findById(productId);
             if (productEntity == null) {
-                // return a message that not found; (throw exception)
-                return null;
+                log.error("product with id: {} not found", productId);
+                throw new NotFoundException("product not found");
             }
             return productEntity.get();
         } catch (Exception e) {
-            log.error("Error while creating new product, error: {}", e.getMessage());
-
-            return null;
+            log.error("Error findProductById: {}, stackTrace: {}",
+                    e.getMessage(),
+                    e.getStackTrace());
+            throw new InternalServerException();
         }
     }
 
     public ProductsResponse findAllProducts() {
         try {
             List<ProductEntity> products = productRepository.findAll();
-            if (products == null) {
-                // return a message that not found; (throw exception)
-                return null;
-            }
             return new ProductsResponse(products);
         } catch (Exception e) {
-            log.error("Error while fetching all products {}", e.getMessage());
-            // internal server error
-            return null;
+            log.error("Error findAllProducts: {}, stackTrace: {}",
+                    e.getMessage(),
+                    e.getStackTrace());
+            throw new InternalServerException();
         }
     }
 
@@ -90,17 +92,15 @@ public class ProductService {
             ProductEntity existingProduct = findProductById(productId);
             UserEntity seller = userService.getUser(sellerId);
             if (seller == null || existingProduct.getSeller().getId() != sellerId) {
-                log.error("Seller with id: {} not found", sellerId);
-                // throw exception 404 not found product
-
-                return null;
+                throw new UnauthorizedException("you are not authorized to update this product");
             }
             ProductEntity productEntity = productEntityMapper.productEntity(updateProductDto, seller);
             return productRepository.save(productEntity);
         } catch (Exception e) {
-            log.error("Error while creating new product, error: {}", e.getMessage());
-
-            return null;
+            log.error("Error updateProduct: {}, stackTrace: {}",
+                    e.getMessage(),
+                    e.getStackTrace());
+            throw new InternalServerException();
         }
     }
 
@@ -111,16 +111,14 @@ public class ProductService {
             ProductEntity existingProduct = findProductById(productId);
             UserEntity seller = userService.getUser(sellerId);
             if (seller == null || existingProduct.getSeller().getId() != sellerId) {
-                log.error("Seller with id: {} not found", sellerId);
-                // throw exception 404 not found product
-
-                return;
+                throw new UnauthorizedException("you are not authorized to delete this product");
             }
             productRepository.delete(existingProduct);
         } catch (Exception e) {
-            log.error("Error while deleting product :{}, error: {}", productId, e.getMessage());
-
-            return;
+            log.error("Error deleteProduct: {}, stackTrace: {}",
+                    e.getMessage(),
+                    e.getStackTrace());
+            throw new InternalServerException();
         }
     }
 
@@ -129,34 +127,32 @@ public class ProductService {
             log.info("buy product of id: {}",
                     productId);
             ProductEntity existingProduct = findProductById(productId);
-            UserEntity buyer = userService.getUser(buyerId);
+            UserEntity user = userService.getUser(buyerId);
+            if (user == null || user.getRole() != UserRoles.BUYER) {
+                throw new UnauthorizedException("you are not authorized to buy");
+            }
             if (existingProduct == null) {
                 log.error("product with id: {} not found", productId);
-                // throw exception 404 not found product
-
-                return null;
+                throw new NotFoundException("product not found");
             }
-            // check if product is available
             if (existingProduct.getQuantity() == 0) {
                 log.error("Product with id: {} is not available", productId);
-                // throw exception 400 not available product
-                return null;
+                throw new NotFoundException("product not available now");
             }
             // check if buyer has enough money
-            if (buyer.getDeposit() < existingProduct.getCost()) {
-                log.error("Buyer with id: {} has not enough money", buyerId);
-                // throw exception 400 not enough deposit
-
-                return null;
+            if (user.getDeposit() < existingProduct.getCost()) {
+                log.error("Buyer with id: {} does not have enough money", buyerId);
+                throw new NotFoundException("You do not have enough coins!");
             }
             existingProduct.setQuantity(existingProduct.getQuantity() - 1);
-            buyer.setDeposit(buyer.getDeposit() - existingProduct.getCost());
-            userService.updateUser(buyer);
+            user.setDeposit(user.getDeposit() - existingProduct.getCost());
+            userService.updateUser(user);
             return productRepository.save(existingProduct);
         } catch (Exception e) {
-            log.error("Error while buying product :{}, error: {}", productId, e.getMessage());
-            // throw exception 500
-            return null;
+            log.error("Error buyProduct: {}, stackTrace: {}",
+                    e.getMessage(),
+                    e.getStackTrace());
+            throw new InternalServerException();
         }
     }
 }

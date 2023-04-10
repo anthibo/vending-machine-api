@@ -1,4 +1,4 @@
-package com.example.flapkak.task.validation;
+package com.example.flapkak.task.common.validation;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;

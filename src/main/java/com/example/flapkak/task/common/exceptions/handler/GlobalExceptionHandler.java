@@ -1,5 +1,9 @@
 package com.example.flapkak.task.common.exceptions.handler;
 
+import com.example.flapkak.task.common.exceptions.BadRequestException;
+import com.example.flapkak.task.common.exceptions.InternalServerException;
+import com.example.flapkak.task.common.exceptions.NotFoundException;
+import com.example.flapkak.task.common.exceptions.UnauthorizedException;
 import com.example.flapkak.task.dtos.ErrorDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -7,9 +11,6 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.client.HttpClientErrorException.BadRequest;
-import org.springframework.web.client.HttpClientErrorException.Unauthorized;
-import org.springframework.web.client.HttpServerErrorException.InternalServerError;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
@@ -20,9 +21,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GlobalExceptionHandler {
     @ResponseBody
-    @ExceptionHandler(value = {InternalServerError.class})
+    @ExceptionHandler(value = {InternalServerException.class})
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ErrorDto handleException(InternalServerError exception) {
+    public ErrorDto handleException(InternalServerException exception) {
         log.error(exception.getMessage(), exception);
         return ErrorDto.builder()
                 .code(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
@@ -31,9 +32,9 @@ public class GlobalExceptionHandler {
     }
 
     @ResponseBody
-    @ExceptionHandler(value = {BadRequest.class})
+    @ExceptionHandler(value = {BadRequestException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorDto handleException(BadRequest exception) {
+    public ErrorDto handleException(BadRequestException exception) {
         log.error(exception.getMessage(), exception);
         return ErrorDto.builder()
                 .code(HttpStatus.BAD_REQUEST.getReasonPhrase())
@@ -42,12 +43,23 @@ public class GlobalExceptionHandler {
     }
 
     @ResponseBody
-    @ExceptionHandler(value = {Unauthorized.class})
+    @ExceptionHandler(value = {UnauthorizedException.class})
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public ErrorDto handleException(Unauthorized exception) {
+    public ErrorDto handleException(UnauthorizedException exception) {
         log.error(exception.getMessage(), exception);
         return ErrorDto.builder()
                 .code(HttpStatus.UNAUTHORIZED.getReasonPhrase())
+                .message(exception.getMessage())
+                .build();
+    }
+
+    @ResponseBody
+    @ExceptionHandler(value = {NotFoundException.class})
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorDto handleException(NotFoundException exception) {
+        log.error(exception.getMessage(), exception);
+        return ErrorDto.builder()
+                .code(HttpStatus.NOT_FOUND.getReasonPhrase())
                 .message(exception.getMessage())
                 .build();
     }

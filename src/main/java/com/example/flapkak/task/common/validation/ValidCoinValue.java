@@ -1,4 +1,4 @@
-package com.example.flapkak.task.validation;
+package com.example.flapkak.task.common.validation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -1,4 +1,4 @@
-package com.example.flapkak.task.mappers;
+package com.example.flapkak.task.common.mappers;
 
 import com.example.flapkak.task.dtos.CreateProductDto;
 import com.example.flapkak.task.dtos.CreateUserDto;

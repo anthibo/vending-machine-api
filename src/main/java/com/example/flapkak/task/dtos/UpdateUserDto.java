@@ -1,6 +1,6 @@
 package com.example.flapkak.task.dtos;
 
-import com.example.flapkak.task.enums.UserRoles;
+import com.example.flapkak.task.common.enums.UserRoles;
 
 import io.micrometer.common.lang.Nullable;
 import jakarta.persistence.EnumType;
@@ -17,8 +17,8 @@ public class UpdateUserDto {
     @Nullable()
     private  String username;
 
-    @Nullable()
-    private String password;
+    // @Nullable()
+    // private String password;
 
     @Nullable()
     @Enumerated(EnumType.STRING)

@@ -1,4 +1,4 @@
-package com.example.flapkak.task.valueObjects;
+package com.example.flapkak.task.common.valueObjects;
 
 import java.util.List;
 

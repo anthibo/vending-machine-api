@@ -1,14 +1,15 @@
 package com.example.flapkak.task.controllers;
 
+import com.example.flapkak.task.common.valueObjects.MessageResponse;
+import com.example.flapkak.task.common.valueObjects.ProductsResponse;
 import com.example.flapkak.task.dtos.CreateProductDto;
 import com.example.flapkak.task.dtos.UpdateProductDto;
 import com.example.flapkak.task.entity.ProductEntity;
 import com.example.flapkak.task.services.ProductService;
-import com.example.flapkak.task.valueObjects.MessageResponse;
-import com.example.flapkak.task.valueObjects.ProductsResponse;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,11 +17,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(value = "/products", produces = "application/vnd.api.v1+json")
+@EnableAutoConfiguration
+@RequestMapping(value = "/api/products", produces = "application/vnd.api.v1+json")
 @Slf4j
 public class ProductController {
     private final ProductService productService;
@@ -38,10 +41,9 @@ public class ProductController {
     }
 
     // Create a product
-    @PostMapping("/")
-    public ResponseEntity<ProductEntity> createProduct(CreateProductDto createUserDto) {
+    @PostMapping
+    public ResponseEntity<ProductEntity> createProduct(@RequestHeader("sellerId") long sellerId,CreateProductDto createUserDto) {
         log.info("create new user with data: {}", createUserDto.toString());
-        long sellerId = 1;
         ProductEntity productEntity = productService.createProduct(createUserDto, sellerId);
         return ResponseEntity.ok(productEntity);
     }
@@ -66,11 +68,10 @@ public class ProductController {
                 new MessageResponse("Product deleted successfully!"));
     }
 
-    @PostMapping("/{productId}/buy")
-    public ResponseEntity<MessageResponse> buyProduct(@PathVariable long productId) {
-        long buyerId = 1;
-        productService.buyProduct(buyerId, productId);
-        return ResponseEntity.ok(
-                new MessageResponse("Product deleted successfully!"));
-    }
+    // @PostMapping("/{productId}/buy")
+    // public ResponseEntity<MessageResponse> buyProduct(@PathVariable long productId, @RequestHeader("buyerId") long buyerId, @RequestBody ) {
+    //     productService.buyProduct(buyerId, productId);
+    //     return ResponseEntity.ok(
+    //             new MessageResponse("Product deleted successfully!"));
+    // }
 }
