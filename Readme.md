@@ -7,7 +7,7 @@ This repo contains the deliverables for FlapKap task
 
 ## Tech Stack
 
-**Server:** Spring Boot, PostgreSQL
+**Backend:** Spring Boot, PostgreSQL
 
 
 ## Run locally
