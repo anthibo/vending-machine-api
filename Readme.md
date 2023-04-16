@@ -1,9 +1,5 @@
 
-# FlapKap-Task
-
-This repo contains the deliverables for FlapKap task
-
-
+# Vending Maching API
 
 ## Tech Stack
 
